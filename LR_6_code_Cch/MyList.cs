@@ -1,133 +1,193 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
+using System.Collections;
 
 namespace LR_6_code_Cch
 {
-    class MyList<T>
+    public class MyList<T> : ICollection<T>
     {
-        private T[] _items;
-        private int _size;
-        private const int DefaultSize = 1;
-        private static readonly T[] EmptyArray = new T[0];
-
         public MyList()
         {
-            _items = new T[DefaultSize];
+            count = 0;
+
+            first_element = null;
+            current_element = null;
         }
 
-        public MyList(int length)
+        public class Element<T>
         {
-            _items = new T[length];
-        }
-
-        public MyList(IEnumerable<T> collection)
-        {
-            var c = collection as ICollection<T>;
-            if (c != null)
+            public Element(T _value, int _index)
             {
-                int count = c.Count;
-                if (count == 0)
-                {
-                    _items = EmptyArray;
-                }
-                else
-                {
-                    _items = new T[count];
-                    c.CopyTo(_items, 0);
-                    _size = count;
-                }
+                value = _value;
+                index = _index;
             }
-            else
-            {
-                _size = 0;
-                _items = EmptyArray;
 
-                using (IEnumerator<T> en = collection.GetEnumerator())
-                {
-                    while (en.MoveNext())
-                    {
-                        Add(en.Current);
-                    }
-                }
-            }
+            public T value { get; set; }
+            public int index { get; set; }
+            public Element<T> next { get; set; }
         }
 
         public void Add(T item)
         {
-            if (_size == _items.Length)
+            if (count == 0)
             {
-                var newItems = new T[_size * 2];
-                Array.Copy(_items, 0, newItems, 0, _size);
-                _items = newItems;
+                Element<T> element = new Element<T>(item, count);
+                first_element = element;
+                count++;
             }
-            _items[_size++] = item;
-        }
-
-        public bool Remove(T item)
-        {
-            int index = IndexOf(item);
-            if (index >= 0)
+            else
             {
-                RemoveAt(index);
-                return true;
+                Element<T> element = new Element<T>(item, count);
+
+                current_element = first_element;
+                while (current_element.next != null)
+                {
+                    current_element = current_element.next;
+                }
+
+                current_element.next = element;
+                count++;
             }
-
-            return false;
-        }
-
-        public void RemoveAt(int index)
-        {
-            _size--;
-            if (index < _size)
-            {
-                Array.Copy(_items, index + 1, _items, index, _size - index);
-            }
-            _items[_size] = default(T);
-        }
-
-        public int IndexOf(T item)
-        {
-            return Array.IndexOf(_items, item, 0, _size);
         }
 
         public void Clear()
         {
-            if (_size > 0)
+            current_element = first_element;
+            while (current_element != null)
             {
-                Array.Clear(_items, 0, _size);
-                _size = 0;
+                current_element = first_element.next;
+                first_element = null;
+                first_element = current_element;
+            }
+
+            count = 0;
+        }
+
+        public bool Contains(T item)
+        {
+            current_element = first_element;
+            while (current_element != null)
+            {
+                if (current_element.value.Equals(item))
+                    return true;
+                else
+                    current_element = current_element.next;
+            }
+            return false;
+        }
+
+        public void CopyTo(T[] array, int arrayIndex)
+        {
+            int _arrayIndex = arrayIndex;
+            if (array.Length - arrayIndex >= count)
+            {
+                current_element = first_element;
+                while (current_element != null)
+                {
+                    array[_arrayIndex] = current_element.value;
+                    current_element = current_element.next;
+                    _arrayIndex++;
+                }
+            }
+            else
+                throw new IndexOutOfRangeException("Not enough memory");
+        }
+
+        public bool Remove(T item)
+        {
+            if (first_element.value.Equals(item))
+            {
+                first_element = first_element.next;
+                count--;
+                return true;
+            }
+            else
+                current_element = first_element.next;
+            while (current_element != null)
+            {
+                if (current_element.value.Equals(item))
+                {
+                    Element<T> current_element2 = first_element;
+                    while (current_element2 != null)
+                    {
+                        if (current_element2.next.value.Equals(item))
+                        {
+                            current_element2.next = current_element.next;
+                            count--;
+                            return true;
+                        }
+                        else
+                            current_element2 = current_element2.next;
+                    }
+                }
+                else
+                    current_element = current_element.next;
+            }
+            return false;
+
+        }
+
+        /// / / / / / 
+        public IEnumerator<T> GetEnumerator()
+        {
+            current_element = first_element;
+            while (current_element != null)
+            {
+                yield return current_element.value;
+                current_element = current_element.next;
             }
         }
 
-        public int Count
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        ///// / / / / / / / /
+
+        public T this[int index]
         {
             get
             {
-                Contract.Ensures(Contract.Result<int>() >= 0);
-                return _size;
+                current_element = first_element;
+                for (int i = 0; i < index; i++)
+                {
+                    current_element = current_element.next;
+                }
+                return current_element.value;
+            }
+
+            set
+            {
+                current_element = first_element;
+                for (int i = 0; i < index; i++)
+                {
+                    current_element = current_element.next;
+                }
+                current_element.value = value;
             }
         }
 
+        private Element<T> first_element;
+        //private Element last_element;
 
-        // Sorts the elements in this list.  Uses the default comparer and 
-        // Array.Sort.
-        public void Sort()
+        private Element<T> current_element;
+
+        //public T Current { get{return current_element.value; }}
+
+        private int count;
+
+        public int Count
         {
-            Sort(0, Count, null);
+            get { return count; }
         }
 
-        public void Sort(int index, int count, IComparer<T> comparer)
-        {
-            Array.Sort(_items, index, count, comparer);
-        }
+        private bool isreadonly = false;
 
-
-        public T[] ToArray()
+        public bool IsReadOnly
         {
-            var array = new T[_size];
-            Array.Copy(_items, 0, array, 0, _size);
-            return array;
+            get { return isreadonly; }
         }
     }
 }
+

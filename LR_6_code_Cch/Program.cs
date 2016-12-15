@@ -11,6 +11,11 @@ namespace LR_6_code_Cch
             myList.Add(new Product("Хлеб", new DateTime(2016, 11, 29), DateTime.Today));
             myList.Add(new Product("Молоко", new DateTime(2016, 10, 14), new DateTime(2016, 10, 20)));
 
+            foreach (var product in myList)
+            {
+                Console.WriteLine(product);   
+            }
+
             myList.Clear();
 
             Console.WriteLine();
